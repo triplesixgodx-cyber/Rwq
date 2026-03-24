@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Игра для Ангелины 💖</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: Georgia, serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ffb6c1, #ff85a1, #ffc0cb, #ff69b4);
+      color: white;
+      padding: 12px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .game-wrap {
+      width: min(100%, 560px);
+      text-align: center;
+    }
+
+    .title {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      margin-bottom: 8px;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.16);
+    }
+
+    .subtitle {
+      font-size: 0.96rem;
+      margin-bottom: 14px;
+      opacity: 0.95;
+      line-height: 1.4;
+    }
+
+    .panel {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .pill {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 9px 14px;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-size: 0.95rem;
+    }
+
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+      border: 2px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.10);
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 54vh;
+      min-height: 360px;
+      max-height: 560px;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.28), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(255,255,255,0.16), transparent 28%),
+        linear-gradient(180deg, #ffd3e1, #ff9fbd 45%, #ff6fa4);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .message {
+      background: rgba(255,255,255,0.92);
+      color: #d63384;
+      padding: 22px 18px;
+      border-radius: 24px;
+      box-shadow: 0 14px 30px rgba(214,51,132,0.22);
+      width: min(100%, 360px);
+    }
+
+    .message h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+
+    .message p {
+      font-size: 0.98rem;
+      line-height: 1.45;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 14px 22px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(135deg, #ff77b7, #d63384);
+      color: white;
+      box-shadow: 0 10px 24px rgba(214,51,132,0.28);
+      width: 100%;
+      touch-action: manipulation;
+    }
+
+    .controls {
+      display: flex;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .ctrl-btn {
+      flex: 1;
+      border: none;
+      border-radius: 22px;
+      padding: 18px 10px;
+      font-size: 2rem;
+      font-weight: bold;
+      color: white;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      touch-action: manipulation;
+    }
+
+    .ctrl-btn:active {
+      transform: scale(0.97);
+      background: rgba(255,255,255,0.26);
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 0.92rem;
+      opacity: 0.95;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 420px) {
+      .message h2 {
+        font-size: 1.35rem;
+      }
+
+      .ctrl-btn {
+        padding: 16px 10px;
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap">
+    <div class="title">Собери сердечки для Ангелины 💖</div>
+    <div class="subtitle">Нажимай кнопки внизу, собирай сердечки и избегай тучек</div>
+
+    <div class="panel">
+      <div class="pill">Очки: <span id="score">0</span></div>
+      <div class="pill">Жизни: <span id="lives">3</span></div>
+      <div class="pill">Время: <span id="time">30</span> сек</div>
+    </div>
+
+    <div class="canvas-box" id="canvasBox">
+      <canvas id="game"></canvas>
+
+      <div class="overlay" id="overlay">
+        <div class="message" id="messageBox">
+          <h2>Мини-игра для iPhone ✨</h2>
+          <p>Жми влево и вправо, лови сердечки и набери как можно больше очков для Ангелины.</p>
+          <button class="btn" id="startBtn">Начать игру</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="leftBtn" aria-label="Влево">◀</button>
+      <button class="ctrl-btn" id="rightBtn" aria-label="Вправо">▶</button>
+    </div>
+
+    <div class="footer-note">Работает касанием, удержанием и тоже поддерживает клавиатуру на компьютере</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const scoreEl = document.getElementById("score");
+    const livesEl = document.getElementById("lives");
+    const timeEl = document.getElementById("time");
+    const overlay = document.getElementById("overlay");
+    const messageBox = document.getElementById("messageBox");
+    const startBtn = document.getElementById("startBtn");
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
+
+    let w = 0;
+    let h = 0;
+    let animationId = null;
+    let timerInterval = null;
+
+    let score = 0;
+    let lives = 3;
+    let timeLeft = 30;
+    let gameRunning = false;
+    let lastTime = 0;
+    let spawnTimer = 0;
+    let items = [];
+    let bgHearts = [];
+
+    const keys = {};
+    const touchState = {
+      left: false,
+      right: false
+    };
+
+    const player = {
+      x: 0,
+      y: 0,
+      width: 68,
+      height: 48,
+      speed: 7
+    };
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      w = rect.width;
+      h = rect.height;
+
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      player.y = h - 82;
+      if (!gameRunning) {
+        player.x = w / 2 - player.width / 2;
+      }
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function updateUI() {
+      scoreEl.textContent = score;
+      livesEl.textContent = lives;
+      timeEl.textContent = timeLeft;
+    }
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function spawnBackgroundHearts() {
+      bgHearts = [];
+      for (let i = 0; i < 16; i++) {
+        bgHearts.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          size: 10 + Math.random() * 12,
+          speed: 0.3 + Math.random() * 0.8,
+          alpha: 0.18 + Math.random() * 0.35
+        });
+      }
+    }
+
+    function resetGame() {
+      score = 0;
+      lives = 3;
+      timeLeft = 30;
+      items = [];
+      spawnTimer = 0;
+      player.x = w / 2 - player.width / 2;
+      player.y = h - 82;
+      spawnBackgroundHearts();
+      updateUI();
+    }
+
+    function startGame() {
+      resetGame();
+      gameRunning = true;
+      overlay.style.display = "none";
+      clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        if (!gameRunning) return;
+        timeLeft--;
+        updateUI();
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+
+      cancelAnimationFrame(animationId);
+      lastTime = performance.now();
+      animationId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      clearInterval(timerInterval);
+      cancelAnimationFrame(animationId);
+
+      let text = "";
+      if (score >= 20) {
+        text = "Это уже целый дождь любви для Ангелины 💘";
+      } else if (score >= 10) {
+        text = "Очень красиво, сердечек получилось много 💖";
+      } else {
+        text = "Неплохо, но можно собрать ещё больше нежности ✨";
+      }
+
+      overlay.style.display = "flex";
+      messageBox.innerHTML = `
+        <h2>Игра окончена 💗</h2>
+        <p>Твой результат: <b>${score}</b><br>${text}</p>
+        <button class="btn" id="restartBtn">Играть снова</button>
+      `;
+      document.getElementById("restartBtn").addEventListener("click", startGame);
+    }
+
+    function spawnItem() {
+      const isBad = Math.random() < 0.24;
+      items.push({
+        x: random(30, w - 30),
+        y: -30,
+        size: isBad ? random(24, 34) : random(20, 30),
+        speed: isBad ? random(2.6, 4) : random(2.2, 4.2),
+        type: isBad ? "cloud" : "heart",
+        wobble: Math.random() * Math.PI * 2
+      });
+    }
+
+    function drawBackground() {
+      for (const b of bgHearts) {
+        ctx.globalAlpha = b.alpha;
+        ctx.fillStyle = "#fff";
+        ctx.font = `${b.size}px Georgia`;
+        ctx.fillText("♡", b.x, b.y);
+
+        b.y += b.speed;
+        if (b.y > h + 20) {
+          b.y = -20;
+          b.x = Math.random() * w;
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPlayer() {
+      const x = player.x;
+      const y = player.y;
+
+      ctx.save();
+      ctx.translate(x, y);
+
+      ctx.fillStyle = "#fff5fa";
+      roundRect(ctx, 0, 12, player.width, player.height - 8, 18);
+      ctx.fill();
+
+      ctx.fillStyle = "#ff5fa2";
+      ctx.beginPath();
+      ctx.arc(18, 18, 10, 0, Math.PI * 2);
+      ctx.arc(player.width - 18, 18, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#d63384";
+      ctx.font = "28px serif";
+      ctx.textAlign = "center";
+      ctx.fillText("♡", player.width / 2, 42);
+
+      ctx.restore();
+    }
+
+    function drawHeart(x, y, size) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      const t = size * 0.3;
+      ctx.moveTo(0, t);
+      ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, t);
+      ctx.bezierCurveTo(-size / 2, size * 0.7, 0, size, 0, size * 1.2);
+      ctx.bezierCurveTo(0, size, size / 2, size * 0.7, size / 2, t);
+      ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, t);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCloud(x, y, size) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = "rgba(120,72,103,0.88)";
+      ctx.beginPath();
+      ctx.arc(-size * 0.35, 0, size * 0.28, 0, Math.PI * 2);
+      ctx.arc(0, -size * 0.08, size * 0.34, 0, Math.PI * 2);
+      ctx.arc(size * 0.35, 0, size * 0.25, 0, Math.PI * 2);
+      ctx.arc(0, size * 0.1, size * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-6, size * 0.45);
+      ctx.lineTo(-12, size * 0.78);
+      ctx.moveTo(8, size * 0.45);
+      ctx.lineTo(2, size * 0.78);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function checkCollision(a, b) {
+      return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+      );
+    }
+
+    function updatePlayer() {
+      const left = keys["ArrowLeft"] || keys["a"] || keys["A"] || touchState.left;
+      const right = keys["ArrowRight"] || keys["d"] || keys["D"] || touchState.right;
+
+      if (left) player.x -= player.speed;
+      if (right) player.x += player.speed;
+
+      if (player.x < 10) player.x = 10;
+      if (player.x + player.width > w - 10) player.x = w - player.width - 10;
+    }
+
+    function updateItems(delta) {
+      spawnTimer += delta;
+      if (spawnTimer > 520) {
+        spawnItem();
+        spawnTimer = 0;
+      }
+
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.y += item.speed;
+        item.x += Math.sin(item.y * 0.03 + item.wobble) * 0.7;
+
+        const hitbox = {
+          x: item.x - item.size * 0.55,
+          y: item.y - item.size * 0.2,
+          width: item.size * 1.1,
+          height: item.size * 1.1
+        };
+
+        const playerBox = {
+          x: player.x,
+          y: player.y,
+          width: player.width,
+          height: player.height
+        };
+
+        if (checkCollision(playerBox, hitbox)) {
+          if (item.type === "heart") {
+            score++;
+          } else {
+            lives--;
+            if (lives <= 0) {
+              updateUI();
+              endGame();
+              return;
+            }
+          }
+          items.splice(i, 1);
+          updateUI();
+          continue;
+        }
+
+        if (item.y > h + 40) {
+          items.splice(i, 1);
+        }
+      }
+    }
+
+    function drawItems() {
+      for (const item of items) {
+        if (item.type === "heart") drawHeart(item.x, item.y, item.size);
+        else drawCloud(item.x, item.y, item.size);
+      }
+    }
+
+    function loop(timestamp) {
+      if (!gameRunning) return;
+
+      const delta = timestamp - lastTime;
+      lastTime = timestamp;
+
+      ctx.clearRect(0, 0, w, h);
+      drawBackground();
+      updatePlayer();
+      updateItems(delta);
+      drawItems();
+      drawPlayer();
+
+      animationId = requestAnimationFrame(loop);
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function bindPress(button, direction) {
+      const setState = (value) => {
+        touchState[direction] = value;
+      };
+
+      button.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        setState(true);
+      });
+
+      button.addEventListener("pointerup", () => setState(false));
+      button.addEventListener("pointercancel", () => setState(false));
+      button.addEventListener("pointerleave", () => setState(false));
+
+      button.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        setState(true);
+      }, { passive: false });
+
+      button.addEventListener("touchend", () => setState(false));
+      button.addEventListener("touchcancel", () => setState(false));
+
+      button.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        setState(true);
+      });
+
+      button.addEventListener("mouseup", () => setState(false));
+      button.addEventListener("mouseleave", () => setState(false));
+    }
+
+    bindPress(leftBtn, "left");
+    bindPress(rightBtn, "right");
+
+    document.addEventListener("keydown", (e) => {
+      keys[e.key] = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+      keys[e.key] = false;
+    });
+
+    startBtn.addEventListener("click", startGame);
+
+    resetGame();
+  </script>
+</body>
+</html>
